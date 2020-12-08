@@ -21,3 +21,6 @@ generate_client:
 
 deploy:
 	ansible-playbook ./_deployment/playbook.yml
+
+get_ip_address:
+	aws ec2 describe-instances --filter Name="instance-state-name",Values="running" | jq .Reservations[0].Instances[0].PublicIpAddress

@@ -213,7 +213,7 @@
                 [
                   "#!/bin/bash -ex",
                   "sudo pacman -Sy --noconfirm",
-                  "sudo pacman -S --noconfirm archlinux-keyring filesystem glibc git",
+                  "sudo pacman -S --noconfirm archlinux-keyring filesystem glibc git wget htop",
                   "sudo pacman -Scc --noconfirm",
                   "sudo pacman -S --noconfirm erlang --overwrite /usr/include/crypt.h --overwrite /usr/lib/libcrypt.so",
                   "cd /home/archlinux",
@@ -221,8 +221,9 @@
                   "chown -R archlinux:archlinux /home/archlinux/rebar3/",
                   "git clone https://github.com/mr-bin/mnclp.git",
                   "chown -R archlinux:archlinux /home/archlinux/mnclp/",
-                  "cd /home/archlinux/rebar3; ./bootstrap"
-
+                  "sudo su archlinux bash -c \"cd /home/archlinux/rebar3 && ./bootstrap\"",
+                  "sudo su archlinux bash -c \"cd /home/archlinux/mnclp && ../rebar3/rebar3 release\"",
+                  "sudo su archlinux bash -c \"/home/archlinux/mnclp/_build/default/rel/mnclp/bin/mnclp start\""
                 ]
               ]
             }
