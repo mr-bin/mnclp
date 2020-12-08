@@ -1,0 +1,33 @@
+---
+- name: Deploy CF stack
+  hosts: localhost
+  connection: local
+  max_fail_percentage: 0
+
+  tasks:
+
+    - name: HomeIpAddress
+      shell: curl http://myexternalip.com/raw
+      register: home_ip_address
+
+    - name: HomeIpAddress
+      set_fact:
+        home_ip_address: "{{home_ip_address.stdout}}/32"
+
+    - name: Deploy template
+      cloudformation:
+        stack_name: "mnclp-app"
+        state: present
+        region: "eu-west-1"
+        template: "template.json"
+        template_parameters:
+          VpcId: "vpc-44e6313d"
+          ImageId: "ami-0b2a498ceb0e0f619" #archlinux64/hvm/ebs/linux
+          KeyName: kitezh_key
+          HomeIpAddress: "{{home_ip_address}}"
+          MinInstanceCount: 1
+          MaxInstanceCount: 1
+
+      register: deploy_output
+
+    - debug: var=deploy_output

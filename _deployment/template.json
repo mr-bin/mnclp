@@ -1,0 +1,228 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "mnclp cf stack",
+  "Parameters": {
+    "VpcId": {
+      "Type": "String",
+      "MinLength": "5"
+    },
+    "KeyName": {
+      "Type": "String",
+      "MinLength": "5"
+    },
+    "ImageId": {
+      "Type": "AWS::EC2::Image::Id",
+      "MinLength": "5"
+    },
+    "HomeIpAddress": {
+      "Type": "String",
+      "MinLength": "5"
+    },
+    "MinInstanceCount": {
+      "Type": "Number"
+    },
+    "MaxInstanceCount": {
+      "Type": "Number"
+    }
+  },
+  "Resources": {
+    "InstanceSecurityGroup": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": "Security group",
+        "VpcId": {
+          "Ref": "VpcId"
+        },
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": {
+              "Ref": "AWS::StackName"
+            }
+          }
+        ],
+        "SecurityGroupIngress": [
+          {
+            "IpProtocol": "tcp",
+            "FromPort": 22,
+            "ToPort": 22,
+            "CidrIp": {
+              "Ref": "HomeIpAddress"
+            }
+          },
+          {
+            "IpProtocol": "tcp",
+            "FromPort": 8787,
+            "ToPort": 8787,
+            "CidrIp": {
+              "Ref": "HomeIpAddress"
+            }
+          }
+        ]
+      }
+    },
+    "DDBMnclpTable": {
+      "Type": "AWS::DynamoDB::Table",
+      "DeletionPolicy": "Delete",
+      "Properties": {
+        "TableName": "ddb_mnclp_table",
+        "ProvisionedThroughput": {
+          "ReadCapacityUnits": "2",
+          "WriteCapacityUnits": "2"
+        },
+        "AttributeDefinitions": [
+          {
+            "AttributeName": "key",
+            "AttributeType": "B"
+          }
+        ],
+        "KeySchema": [
+          {
+            "AttributeName": "key",
+            "KeyType": "HASH"
+          }
+        ]
+      }
+    },
+    "ASGMnclpApp": {
+      "Type": "AWS::AutoScaling::AutoScalingGroup",
+      "Properties": {
+        "AvailabilityZones": {
+          "Fn::GetAZs": ""
+        },
+        "LaunchTemplate": {
+          "LaunchTemplateId": {
+            "Ref": "MNCLPLaunchTemplate"
+          },
+          "Version": {
+            "Fn::GetAtt": [
+              "MNCLPLaunchTemplate",
+              "LatestVersionNumber"
+            ]
+          }
+        },
+        "MinSize": {
+            "Ref": "MinInstanceCount"
+          },
+        "MaxSize": {
+            "Ref": "MaxInstanceCount"
+          },
+        "TerminationPolicies": [
+          "OldestLaunchConfiguration",
+          "OldestInstance"
+        ],
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "mnclp_app_instance",
+            "PropagateAtLaunch": "true"
+          }
+        ]
+      }
+    },
+    "MNCLPPolicy": {
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyName": "mnclp-policy",
+        "PolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Action": [
+                "dynamodb:*"
+              ],
+              "Resource": [
+                "*"
+              ]
+            }
+          ]
+        },
+        "Roles": [
+          {
+            "Ref": "MNCLPRole"
+          }
+        ]
+      }
+    },
+    "MNCLPRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": [
+                  "ec2.amazonaws.com"
+                ]
+              },
+              "Action": [
+                "sts:AssumeRole"
+              ]
+            }
+          ]
+        },
+        "Path": "/"
+      }
+    },
+    "MNCLPInstanceProfile": {
+      "Type": "AWS::IAM::InstanceProfile",
+      "Properties": {
+        "Path": "/",
+        "Roles": [
+          {
+            "Ref": "MNCLPRole"
+          }
+        ]
+      }
+    },
+    "MNCLPLaunchTemplate": {
+      "Type": "AWS::EC2::LaunchTemplate",
+      "Properties": {
+        "LaunchTemplateName": "mnclp_launch_template",
+        "LaunchTemplateData": {
+          "ImageId": {
+            "Ref": "ImageId"
+          },
+          "KeyName": {
+            "Ref": "KeyName"
+          },
+          "InstanceType": "t2.micro",
+          "NetworkInterfaces": [
+            {
+              "DeviceIndex": 0,
+              "AssociatePublicIpAddress": true,
+              "Groups": [
+                {
+                  "Ref": "InstanceSecurityGroup"
+                }
+              ]
+            }
+          ],
+          "IamInstanceProfile": {
+            "Name": {
+              "Ref": "MNCLPInstanceProfile"
+            }
+          },
+          "UserData": {
+            "Fn::Base64": {
+              "Fn::Join": [
+                "\n",
+                [
+                  "#!/bin/bash -ex",
+                  "sudo pacman -Sy --noconfirm",
+                  "sudo pacman -S --noconfirm archlinux-keyring filesystem glibc git",
+                  "sudo pacman -Scc --noconfirm",
+                  "sudo pacman -S --noconfirm erlang rebar --overwrite /usr/include/crypt.h --overwrite /usr/lib/libcrypt.so",
+                  "git clone https://github.com/mr-bin/mnclp.git"
+                ]
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+}
