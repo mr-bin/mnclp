@@ -215,8 +215,14 @@
                   "sudo pacman -Sy --noconfirm",
                   "sudo pacman -S --noconfirm archlinux-keyring filesystem glibc git",
                   "sudo pacman -Scc --noconfirm",
-                  "sudo pacman -S --noconfirm erlang rebar --overwrite /usr/include/crypt.h --overwrite /usr/lib/libcrypt.so",
-                  "git clone https://github.com/mr-bin/mnclp.git"
+                  "sudo pacman -S --noconfirm erlang --overwrite /usr/include/crypt.h --overwrite /usr/lib/libcrypt.so",
+                  "cd /home/archlinux",
+                  "git clone https://github.com/erlang/rebar3.git",
+                  "chown -R archlinux:archlinux /home/archlinux/rebar3/",
+                  "git clone https://github.com/mr-bin/mnclp.git",
+                  "chown -R archlinux:archlinux /home/archlinux/mnclp/",
+                  "cd /home/archlinux/rebar3; ./bootstrap"
+
                 ]
               ]
             }

@@ -10,7 +10,7 @@
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
 -export([aws_config/0, aws_ddb_list_tables/1,
-         aws_ddb_get_record/3, aws_ddb_put_record/3]).
+  aws_ddb_get_record/3, aws_ddb_put_record/3]).
 
 -define(SERVER, ?MODULE).
 
@@ -69,9 +69,9 @@ handle_cast(_Request, State = #{}) ->
 %% @private
 %% @doc Handling all non call/cast messages
 -spec(handle_info(Info :: timeout() | term(), State :: #{}) ->
-      {noreply, NewState :: #{}} |
-      {noreply, NewState :: #{}, timeout() | hibernate} |
-      {stop, Reason :: term(), NewState :: #{}}).
+  {noreply, NewState :: #{}} |
+  {noreply, NewState :: #{}, timeout() | hibernate} |
+  {stop, Reason :: term(), NewState :: #{}}).
 handle_info(_Info, State = #{}) ->
   {noreply, State}.
 
@@ -87,7 +87,7 @@ terminate(_Reason, _State = #{}) ->
 %% @private
 %% @doc Convert process state when code is changed
 -spec(code_change(OldVsn :: term() | {down, term()}, State :: #{}, Extra :: term()) ->
-      {ok, NewState :: #{}} | {error, Reason :: term()}).
+  {ok, NewState :: #{}} | {error, Reason :: term()}).
 code_change(_OldVsn, State = #{}, _Extra) ->
   {ok, State}.
 
@@ -96,23 +96,35 @@ code_change(_OldVsn, State = #{}, _Extra) ->
 %%%===================================================================
 
 aws_config() ->
-%%  Config = #aws_config{
-%%            access_key_id = application:get_env(aws_key),
-%%            secret_access_key = application:get_env(aws_secret)
-%%           },
-  Config0 = #aws_config{
-               access_key_id =  "_not_needed_locally_",
-               secret_access_key = "_not_needed_locally_",
-               security_token = "_not_needed_locally_",
-               ddb_scheme="http://",
-               ddb_host="localhost",
-               ddb_port=4566,
-               retry=fun erlcloud_retry:default_retry/1},
-  {ok,Config} = erlcloud_aws:update_config(Config0),
+  Config0 = case os:getenv("USER") of
+              "archlinux" -> %% dummy check is application is running on aws instance
+                #aws_config{
+                  access_key_id = application:get_env(aws_key),
+                  secret_access_key = application:get_env(aws_secret),
+                  security_token = case os:getenv("AWS_SESSION_TOKEN") of
+                                     false -> undefined;
+                                     Value -> Value
+                                   end,
+                  ddb_scheme = "http://",
+                  ddb_host = "dynamodb.eu-west-1.amazonaws.com",
+                  ddb_port = 80,
+                  retry = fun erlcloud_retry:default_retry/1
+                };
+              _ ->
+                #aws_config{
+                  access_key_id = "_not_needed_locally_",
+                  secret_access_key = "_not_needed_locally_",
+                  security_token = "_not_needed_locally_",
+                  ddb_scheme = "http://",
+                  ddb_host = "localhost",
+                  ddb_port = 4566,
+                  retry = fun erlcloud_retry:default_retry/1}
+            end,
+  {ok, Config} = erlcloud_aws:update_config(Config0),
   Config.
 
 aws_ddb_list_tables(Config) ->
-  {ok,[Table]} = erlcloud_ddb2:list_tables([], Config),
+  {ok, [Table]} = erlcloud_ddb2:list_tables([], Config),
   Table.
 
 aws_ddb_put_record(Table, Config, Data) ->
