@@ -61,6 +61,54 @@
         ]
       }
     },
+    "MNCLPKmsKey": {
+      "Type": "AWS::KMS::Key",
+      "Properties": {
+        "KeyPolicy": {
+          "Version": "2012-10-17",
+          "Id": "default-key-policy",
+          "Statement": [
+            {
+              "Sid": "Enable IAM User Permissions",
+              "Effect": "Allow",
+              "Principal": {
+                "AWS": "*"
+              },
+              "Action": "kms:*",
+              "Resource": "*",
+              "Condition": {
+                "StringEquals": {
+                  "kms:CallerAccount": "882566390467",
+                  "kms:ViaService": "dynamodb.eu-west-1.amazonaws.com"
+                }
+              }
+            },
+            {
+              "Sid": "Allow direct access to key metadata to the account",
+              "Effect": "Allow",
+              "Principal": {
+                "AWS": "arn:aws:iam::882566390467:root"
+              },
+              "Action": [
+                "kms:*"
+              ],
+              "Resource": "*"
+            },
+            {
+              "Sid": "Allow DynamoDB Service with service principal name dynamodb.amazonaws.com to describe the key directly",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "dynamodb.amazonaws.com"
+              },
+              "Action": [
+                "kms:*"
+              ],
+              "Resource": "*"
+            }
+          ]
+        }
+      }
+    },
     "DDBMnclpTable": {
       "Type": "AWS::DynamoDB::Table",
       "DeletionPolicy": "Delete",
@@ -81,7 +129,17 @@
             "AttributeName": "key",
             "KeyType": "HASH"
           }
-        ]
+        ],
+        "SSESpecification": {
+          "KMSMasterKeyId": {
+            "Fn::GetAtt": [
+              "MNCLPKmsKey",
+              "Arn"
+            ]
+          },
+          "SSEEnabled": "true",
+          "SSEType": "KMS"
+        }
       }
     },
     "ASGMnclpApp": {
@@ -102,11 +160,11 @@
           }
         },
         "MinSize": {
-            "Ref": "MinInstanceCount"
-          },
+          "Ref": "MinInstanceCount"
+        },
         "MaxSize": {
-            "Ref": "MaxInstanceCount"
-          },
+          "Ref": "MaxInstanceCount"
+        },
         "TerminationPolicies": [
           "OldestLaunchConfiguration",
           "OldestInstance"
