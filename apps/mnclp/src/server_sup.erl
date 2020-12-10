@@ -8,9 +8,9 @@ start_link() ->
   supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 
 init([]) ->
-%  {ok, Port} = application:get_env(port),
   Port = 8787,
-  {ok, ListenSocket} = gen_tcp:listen(Port, [{active, once}, {mode, binary}, binary]), %{packet, line},
+  BufferSize = 1048576, % 1MB. it is required to have some logic around buffer size
+  {ok, ListenSocket} = gen_tcp:listen(Port, [{active, once}, {buffer, BufferSize}, {mode, binary}, binary]),
   spawn_link(fun empty_listeners/0),
 
   SupFlags = #{strategy => simple_one_for_one,

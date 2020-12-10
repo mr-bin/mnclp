@@ -28,16 +28,16 @@ def get(key):
 
 
 def send(remote_socket, req_envelope):
-    print(req_envelope)
+    print("--------->>>\n", req_envelope)
     serialized_data_send = req_envelope.SerializeToString()
     remote_socket.sendall(serialized_data_send)
 
 
 def receive(remote_socket):
-    data = remote_socket.recv(1024)
+    data = remote_socket.recv(1048576)
     req_envelope = kv_pb2.req_envelope()
     req_envelope.ParseFromString(data)
-    print(req_envelope)
+    print("<<<---------\n", req_envelope)
 
 
 if __name__ == '__main__':
@@ -45,12 +45,15 @@ if __name__ == '__main__':
     parser.add_argument('-a', '--host', dest='host', type=str, default=socket.gethostname())
     parser.add_argument('-p', '--port', dest='port', type=int, default=8787)
     parser.add_argument('-k', '--key', dest='key', type=str)
+    parser.add_argument('-f', '--file_path', dest='file_path', type=argparse.FileType('r'))
     parser.add_argument('-v', '--value', dest='value', type=str, default='')
     args = parser.parse_args()
 
     client_socket = connect(args.host, args.port)
     if args.key and args.value:
         request = put(args.key, args.value)
+    elif args.key and args.file_path:
+        request = put(args.key, args.file_path.read())
     else:
         request = get(args.key)
     send(client_socket, request)
