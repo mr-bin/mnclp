@@ -80,7 +80,7 @@ process_request(#req_envelope{type = set_request_t} = Req) ->
   Key = Req#req_envelope.set_req#set_request.req#data.key,
   Value = Req#req_envelope.set_req#set_request.req#data.value,
 
-  DdbPid = mnclp_sup:get_ddb_worker_pid(),
+  DdbPid = ddb_sup:get_ddb_worker_pid(),
   Resp = case gen_server:call(DdbPid, {put_data, [{<<"key">>, {b, Key}},
     {<<"value">>, Value},
     {<<"vsn">>, <<"1">>}]}) of
@@ -92,7 +92,7 @@ process_request(#req_envelope{type = set_request_t} = Req) ->
 process_request(#req_envelope{type = get_request_t} = Req) ->
   Key = Req#req_envelope.get_req#get_request.key,
 
-  DdbPid = mnclp_sup:get_ddb_worker_pid(),
+  DdbPid = ddb_sup:get_ddb_worker_pid(),
   Resp = case gen_server:call(DdbPid, {get_data, {<<"key">>, {b, Key}}}) of
            {ok, []} -> #get_response{error = not_found};
            {ok, Item} ->

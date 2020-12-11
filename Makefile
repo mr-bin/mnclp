@@ -24,3 +24,6 @@ deploy:
 
 get_ip_address:
 	aws ec2 describe-instances --filter Name="instance-state-name",Values="running" | jq .Reservations[0].Instances[0].PublicIpAddress
+
+generate_binary_file:
+	python -c 'f = open("big_file", "w"); a = "f"*6000; f.write(a); f.close()'
