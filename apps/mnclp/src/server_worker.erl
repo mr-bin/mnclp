@@ -30,11 +30,11 @@ handle_info({tcp, _Socket, Str}, S = #{socket := Socket, partial_data := Partial
   RecordOrError = case PartialData0 of
                     undef -> try
                                kv_pb:decode_msg(Str, req_envelope)
-                             catch _ -> error
+                             catch _:_ -> error
                              end;
                     _ -> try
                            kv_pb:decode_msg(<<PartialData0/binary, Str/binary>>, req_envelope)
-                         catch _ -> error
+                         catch _:_ -> error
                          end
                   end,
   case RecordOrError of
