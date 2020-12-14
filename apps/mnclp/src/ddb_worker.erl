@@ -47,12 +47,6 @@ init([]) ->
   {noreply, NewState :: #{}, timeout() | hibernate} |
   {stop, Reason :: term(), Reply :: term(), NewState :: #{}} |
   {stop, Reason :: term(), NewState :: #{}}).
-handle_call({put_data, Data}, _From, State = #{aws_config := Config, table := Table}) ->
-  {ok, Resp} = aws_ddb_put_record(Table, Config, Data),
-  {reply, {ok, Resp}, State};
-handle_call({get_data, Key}, _From, State = #{aws_config := Config, table := Table}) ->
-  {ok, Resp} = aws_ddb_get_record(Table, Config, Key),
-  {reply, {ok, Resp}, State};
 handle_call(_Request, _From, State = #{}) ->
   {reply, ok, State}.
 
@@ -62,6 +56,14 @@ handle_call(_Request, _From, State = #{}) ->
   {noreply, NewState :: #{}} |
   {noreply, NewState :: #{}, timeout() | hibernate} |
   {stop, Reason :: term(), NewState :: #{}}).
+handle_cast({put_data, ClientPid, Data}, State = #{aws_config := Config, table := Table}) ->
+  Resp = aws_ddb_put_record(Table, Config, Data),
+  gen_server:cast(ClientPid, {put_response, Resp}),
+  {noreply, State};
+handle_cast({get_data, ClientPid, Key}, State = #{aws_config := Config, table := Table}) ->
+  Resp = aws_ddb_get_record(Table, Config, Key),
+  gen_server:cast(ClientPid, {get_response, Resp}),
+  {noreply, State};
 handle_cast(_Request, State = #{}) ->
   {noreply, State}.
 
