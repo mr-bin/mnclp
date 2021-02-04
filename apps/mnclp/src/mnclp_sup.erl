@@ -15,14 +15,14 @@ init([]) ->
                  period => 10},
     ChildSpecs = [#{id => tcp_server_sup,
                    start => {server_sup, start_link, []},
-                   restart => temporary,
+                   restart => permanent,
                    shutdown => 1000,
                    type => supervisor,
                    modules => [server_sup]
                   },
                   #{id => ddb_sup,
                    start => {ddb_sup, start_link, []},
-                   restart => temporary,
+                   restart => permanent,
                    shutdown => 1000,
                    type => worker,
                    modules => [ddb_sup]
